@@ -1,0 +1,54 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Reading codes with the camera, only after the user allows it. Frames are read on the phone and never kept. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <!-- Modo MCP through the relay, only when the user turns it on (off by default). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- A short buzz when a code is read (Ajustes › Vibrar). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- «Redireccionar a Hub»: only apps signed with the same key (Gateway Hub) get this permission. -->
+    <permission android:name="com.zirakusa.gatewayhub.permission.LINK" android:protectionLevel="signature"
+        android:label="@string/hub_link_permission" />
+    <!-- The family summary («Hoy» in Inicio): only apps signed with the same key may read it. -->
+    <permission android:name="com.zirakusa.family.permission.SUMMARY" android:protectionLevel="signature"
+        android:label="@string/summary_permission" />
+    <queries>
+        <!-- «Ir al Hub» opens the Gateway Hub app, when it is installed. -->
+        <package android:name="com.zirakusa.gatewayhub" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+        <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Gateway Hub's scanner finds QR (module qr_) and its link channel. Being found turns nothing on. -->
+            <intent-filter>
+                <action android:name="com.zirakusa.gatewayhub.action.APP" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="com.zirakusa.gatewayhub.module" android:value="qr_" />
+            <meta-data android:name="com.zirakusa.gatewayhub.link" android:value="${applicationId}.hublink" />
+            <meta-data android:name="com.zirakusa.family.summary" android:value="${applicationId}.summary" />
+        </activity>
+        <!-- «Compartir»: the code's picture, from the app's cache, read only by the app the user picks. -->
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.files"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
+        <provider android:name=".SummaryProvider" android:authorities="${applicationId}.summary"
+            android:exported="true" android:permission="com.zirakusa.family.permission.SUMMARY" />
+        <provider android:name=".mcp.HubLinkProvider" android:authorities="${applicationId}.hublink"
+            android:exported="true" android:permission="com.zirakusa.gatewayhub.permission.LINK" />
+    </application>
+</manifest>
