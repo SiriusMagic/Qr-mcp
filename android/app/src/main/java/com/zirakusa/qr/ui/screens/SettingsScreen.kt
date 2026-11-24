@@ -1,5 +1,7 @@
 package com.zirakusa.qr.ui.screens
 
+import com.zirakusa.qr.IconCard
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -56,6 +58,7 @@ import com.zirakusa.qr.ui.theme.QrColors
             }
             Item(stringResource(R.string.mcp_title), "$status · ${stringResource(R.string.mcp_settings_hint)}") { state.page = Page.MCP }
         }
+        IconCard(QrColors.Card, QrColors.Text, QrColors.Muted, QrColors.Accent, androidx.compose.ui.graphics.Color(0xFF0A1420))
         ThemeCard(state.themeMode, state.accent, state::changeTheme, state::changeAccent)
         Caption(stringResource(R.string.about))
         Group {
