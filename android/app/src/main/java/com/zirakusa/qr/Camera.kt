@@ -29,10 +29,10 @@ import com.zirakusa.qr.data.Read
 import java.util.concurrent.Executors
 
 /**
- * The back camera with its preview; each frame's brightness goes to [Codes.readFrame] on one worker thread (the
+ * The back (or, in Ajustes, the front) camera with its preview; each frame's brightness goes to [Codes.readFrame] on one worker thread (the
  * newest frame only). Frames are read only while [active] and never kept: nothing is saved or sent.
  */
-@Composable fun CameraView(modifier: Modifier, active: Boolean, torch: Boolean, barcodes: Boolean, onRead: (Read) -> Unit) {
+@Composable fun CameraView(modifier: Modifier, active: Boolean, torch: Boolean, barcodes: Boolean, front: Boolean, onRead: (Read) -> Unit) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val preview = remember { PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER } }
@@ -40,7 +40,7 @@ import java.util.concurrent.Executors
     val withBarcodes by rememberUpdatedState(barcodes)
     val found by rememberUpdatedState(onRead)
     var camera by remember { mutableStateOf<Camera?>(null) }
-    DisposableEffect(owner) {
+    DisposableEffect(owner, front) {
         val worker = Executors.newSingleThreadExecutor()
         val main = Handler(Looper.getMainLooper())
         val future = ProcessCameraProvider.getInstance(context)
@@ -65,7 +65,10 @@ import java.util.concurrent.Executors
                 } catch (_: RuntimeException) { // a broken frame: wait for the next one
                 } finally { image.close() }
             }
-            runCatching { p.unbindAll(); camera = p.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, show, analysis) }
+            // «Cámara: frontal» when the phone has one; otherwise the back camera.
+            val selector = if (front && runCatching { p.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) }.getOrDefault(false))
+                CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+            runCatching { p.unbindAll(); camera = p.bindToLifecycle(owner, selector, show, analysis) }
         }, ContextCompat.getMainExecutor(context))
         onDispose { provider?.unbindAll(); camera = null; worker.shutdown() }
     }

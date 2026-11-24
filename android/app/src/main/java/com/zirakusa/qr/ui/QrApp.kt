@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddBox
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,9 +54,16 @@ class AppActions(
     val toast: (String) -> Unit = {},
     val copyLink: (String) -> Unit = {},
     val goToHub: () -> Unit = {},
+    /** After a code is kept and shown (or noted): «Copiar al portapapeles». */
+    val handled: (Entry) -> Unit = {},
+    /** «Desde el portapapeles»: the clipboard's text, or null. */
+    val paste: () -> String? = { null },
+    /** «Exportar» and «Importar» of «Historial», through Android's file picker. */
+    val exportHistory: () -> Unit = {},
+    val importHistory: () -> Unit = {},
 )
 
-/** The whole app: the chosen tab with the bar at the bottom, or a page over it. */
+/** The whole app: the chosen tab with the bar at the bottom (Escanear · Crear · Historial · Ajustes), or a page over it. */
 @Composable fun QrApp(state: QrState, actions: AppActions = AppActions()) {
     when (state.page) {
         Page.RESULT -> state.shown?.let { return ResultScreen(state, it, actions) }
@@ -67,7 +75,7 @@ class AppActions(
         when (state.tab) {
             Tab.SCAN -> ScanScreen(state, actions)
             Tab.CREATE -> CreateScreen(state, actions)
-            Tab.HISTORY -> HistoryScreen(state)
+            Tab.HISTORY -> HistoryScreen(state, actions)
         }
         TabBar(state, Modifier.align(Alignment.BottomCenter))
     }
@@ -79,6 +87,7 @@ class AppActions(
         TabItem(Icons.Outlined.QrCodeScanner, R.string.tab_scan, state.tab == Tab.SCAN) { state.tab = Tab.SCAN }
         TabItem(Icons.Outlined.AddBox, R.string.tab_create, state.tab == Tab.CREATE) { state.tab = Tab.CREATE }
         TabItem(Icons.Outlined.History, R.string.tab_history, state.tab == Tab.HISTORY) { state.tab = Tab.HISTORY }
+        TabItem(Icons.Outlined.Settings, R.string.settings, false) { state.page = Page.SETTINGS }
     }
 
 @Composable private fun TabItem(icon: ImageVector, label: Int, on: Boolean, onClick: () -> Unit) =

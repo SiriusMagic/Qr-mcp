@@ -33,6 +33,12 @@
                 <action android:name="com.zirakusa.gatewayhub.action.APP" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- Text shared from another app («Compartir» › QR) opens «Crear» with it: it only fills the fields. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
             <meta-data android:name="com.zirakusa.gatewayhub.module" android:value="qr_" />
             <meta-data android:name="com.zirakusa.gatewayhub.link" android:value="${applicationId}.hublink" />
             <meta-data android:name="com.zirakusa.family.summary" android:value="${applicationId}.summary" />

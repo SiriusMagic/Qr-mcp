@@ -50,5 +50,5 @@ class SummaryProvider : ContentProvider() {
 /** The name of each kind of code. */
 fun typeName(t: Type) = when (t) {
     Type.TEXT -> R.string.type_text; Type.LINK -> R.string.type_link; Type.WIFI -> R.string.type_wifi; Type.CONTACT -> R.string.type_contact
-    Type.PHONE -> R.string.type_phone; Type.EMAIL -> R.string.type_email; Type.SMS -> R.string.type_sms; Type.PLACE -> R.string.type_place
+    Type.PHONE -> R.string.type_phone; Type.EMAIL -> R.string.type_email; Type.SMS -> R.string.type_sms; Type.EVENT -> R.string.type_event; Type.PLACE -> R.string.type_place
 }

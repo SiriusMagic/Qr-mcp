@@ -100,6 +100,28 @@ class McpTest {
         assertEquals(3, history.list().size)
     }
 
+    /** Calendar events (0.2.0): made, kept, read back; bad dates refused. */
+    @Test fun eventsMakeCreateAndParse() {
+        val made = ok("qr_make", JSONObject().put("type", "event").put("title", "Cena").put("start", "2026-11-24T18:30")
+            .put("end", "2026-11-24T21:00").put("location", "Quito"))
+        assertEquals("BEGIN:VEVENT\nSUMMARY:Cena\nDTSTART:20261124T183000\nDTEND:20261124T210000\nLOCATION:Quito\nEND:VEVENT", made.getString("text"))
+        val content = made.getJSONObject("content")
+        assertEquals("event", content.getString("type")); assertEquals("2026-11-24T18:30", content.getString("start"))
+        assertEquals("Quito", content.getString("location")); assertFalse(content.getBoolean("all_day"))
+        val day = ok("qr_create", JSONObject().put("type", "event").put("title", "Feriado").put("start", "2026-12-25"))
+        assertTrue(day.getBoolean("saved")); assertEquals(4, history.list().size)
+        assertTrue(ok("qr_item", JSONObject().put("id", day.getLong("id"))).getJSONObject("content").getBoolean("all_day"))
+        assertEquals("2026-12-25", ok("qr_parse", JSONObject().put("text", day.getString("text"))).getString("start"))
+        assertEquals("BAD_ARGUMENT", code("qr_make", JSONObject().put("type", "event").put("title", "Cena").put("start", "mañana")))
+        assertEquals("BAD_ARGUMENT", code("qr_make", JSONObject().put("type", "event").put("title", "Cena")))
+        assertEquals("BAD_ARGUMENT", code("qr_make", JSONObject().put("type", "event").put("start", "2026-11-24")))
+        assertEquals("BAD_ARGUMENT", code("qr_make", JSONObject().put("type", "event").put("title", "Cena").put("start", "2026-11-24T18:00")
+            .put("end", "2026-11-24T17:00")))
+        assertEquals("BAD_ARGUMENT", code("qr_create", JSONObject().put("type", "event").put("title", 5).put("start", "2026-11-24")))
+        assertEquals("READ_ONLY", code("qr_create", JSONObject().put("type", "event").put("title", "x").put("start", "2026-11-24"), reader))
+        assertEquals(4, history.list().size)
+    }
+
     @Test fun badArgumentsAreRefused() {
         assertEquals("BAD_ARGUMENT", code("qr_history", JSONObject().put("filter", "old")))
         assertEquals("BAD_ARGUMENT", code("qr_history", JSONObject().put("limit", 500)))

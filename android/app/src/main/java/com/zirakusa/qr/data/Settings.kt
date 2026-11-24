@@ -24,6 +24,18 @@ class Settings(private val kv: KeyValues) {
     var keepHistory: Boolean get() = flag("keep_history", true); set(v) = setFlag("keep_history", v)
     /** Also read bar codes of products and books (EAN, UPC, Code 128…), not only QR. */
     var barcodes: Boolean get() = flag("barcodes", true); set(v) = setFlag("barcodes", v)
+    /** A short beep when a code is read (off by default). */
+    var sound: Boolean get() = flag("sound", false); set(v) = setFlag("sound", v)
+    /** Copy the text of each code read to the clipboard (off by default). */
+    var autoCopy: Boolean get() = flag("auto_copy", false); set(v) = setFlag("auto_copy", v)
+    /** «Escaneo continuo»: keep reading; each code only goes to «Historial» with a short note (off by default). */
+    var continuous: Boolean get() = flag("continuous", false); set(v) = setFlag("continuous", v)
+    /** «Confirmar escaneos manualmente»: show what the camera read and wait for a tap (off by default). */
+    var confirm: Boolean get() = flag("confirm", false); set(v) = setFlag("confirm", v)
+    /** «Guardar duplicados»: the same code read again is a new line (off: the old one moves to the top). */
+    var duplicates: Boolean get() = flag("duplicates", false); set(v) = setFlag("duplicates", v)
+    /** The front camera instead of the back one. */
+    var frontCamera: Boolean get() = flag("front_camera", false); set(v) = setFlag("front_camera", v)
     var theme: String? get() = kv.get("theme"); set(v) = kv.put("theme", v)
     var accent: String? get() = kv.get("accent"); set(v) = kv.put("accent", v)
 }

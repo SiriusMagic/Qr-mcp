@@ -44,14 +44,39 @@ class History(private val kv: KeyValues, private val now: () -> Long = System::c
 
     fun get(id: Long) = list().firstOrNull { it.id == id }
 
-    /** Adds a code (or brings the same recent one to the top); returns it. */
-    fun add(text: String, format: String, source: Source): Entry {
+    /**
+     * Adds a code; returns it. The same code seen again within [REPEAT_MS] is never added twice. Without [duplicates],
+     * a code already kept (read or made, as this one) moves to the top with the new time, keeping its name and star.
+     */
+    fun add(text: String, format: String, source: Source, duplicates: Boolean = true): Entry {
         val items = list()
         val at = now()
-        items.firstOrNull { it.text == text && it.source == source && at - it.at in 0..REPEAT_MS }?.let { return it }
-        val entry = Entry((items.maxOfOrNull { it.id } ?: 0) + 1, text.take(Payload.MAX * 2), format, source, at)
+        val kept = text.take(Payload.MAX * 2)
+        items.firstOrNull { it.text == kept && it.source == source && at - it.at in 0..REPEAT_MS }?.let { return it }
+        if (!duplicates) items.firstOrNull { it.text == kept && it.format == format && (it.source == Source.CREATED) == (source == Source.CREATED) }?.let { old ->
+            val moved = old.copy(at = at, source = source)
+            save(listOf(moved) + items.filterNot { it.id == old.id })
+            return moved
+        }
+        val entry = Entry((items.maxOfOrNull { it.id } ?: 0) + 1, kept, format, source, at)
         save(trim(listOf(entry) + items))
         return entry
+    }
+
+    /**
+     * «Importar»: codes from a file (see [HistoryCsv]). A code already kept with the same text, format and time is
+     * skipped, so importing the same file twice adds nothing. Returns how many were added.
+     */
+    fun import(rows: List<Entry>): Int {
+        val items = list()
+        val seen = items.map { Triple(it.text, it.format, it.at) }.toMutableSet()
+        var next = (items.maxOfOrNull { it.id } ?: 0) + 1
+        val added = rows.filter { it.text.isNotBlank() && seen.add(Triple(it.text, it.format, it.at)) }
+            .map { it.copy(id = next++, text = it.text.take(Payload.MAX * 2), name = it.name.take(Entry.NAME_MAX)) }
+        if (added.isEmpty()) return 0
+        val merged = trim((items + added).sortedByDescending { it.at })
+        save(merged)
+        return added.count { a -> merged.any { it.id == a.id } }
     }
 
     fun update(entry: Entry) = save(list().map { if (it.id == entry.id) entry else it })

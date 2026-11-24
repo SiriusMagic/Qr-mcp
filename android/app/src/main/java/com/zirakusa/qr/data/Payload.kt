@@ -1,6 +1,12 @@
 package com.zirakusa.qr.data
 
 import java.net.URI
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 /** What a code holds, read from its text. Unknown shapes are plain [Text]. */
 sealed class Content {
@@ -17,11 +23,14 @@ sealed class Content {
     data class Email(val to: String, val subject: String = "", val body: String = "") : Content() { override val kind get() = Type.EMAIL }
     data class Sms(val number: String, val body: String = "") : Content() { override val kind get() = Type.SMS }
     data class Place(val lat: Double, val lng: Double) : Content() { override val kind get() = Type.PLACE }
+    /** A calendar event (iCalendar VEVENT). Times are the phone's local time; [allDay] events have only dates. */
+    data class Event(val title: String, val start: LocalDateTime?, val end: LocalDateTime? = null, val place: String = "",
+        val allDay: Boolean = false) : Content() { override val kind get() = Type.EVENT }
 }
 
 /** The kinds of code, in the order «Crear» offers them (Place is only read). [key] is what MCP uses. */
 enum class Type(val key: String) {
-    TEXT("text"), LINK("link"), WIFI("wifi"), CONTACT("contact"), PHONE("phone"), EMAIL("email"), SMS("sms"), PLACE("place");
+    TEXT("text"), LINK("link"), WIFI("wifi"), CONTACT("contact"), PHONE("phone"), EMAIL("email"), SMS("sms"), EVENT("event"), PLACE("place");
     companion object { fun from(key: String?) = entries.firstOrNull { it.key == key } }
 }
 
@@ -50,6 +59,7 @@ object Payload {
             upper.startsWith("MATMSG:") -> fields(text.substring(7)).let { Content.Email(it["TO"].orEmpty(), it["SUB"].orEmpty(), it["BODY"].orEmpty()) }
             upper.startsWith("SMSTO:") || upper.startsWith("SMS:") -> sms(text)
             upper.startsWith("GEO:") -> geo(text) ?: Content.Text(text)
+            upper.startsWith("BEGIN:VEVENT") || upper.startsWith("BEGIN:VCALENDAR") && upper.contains("BEGIN:VEVENT") -> event(text, ZoneId.systemDefault())
             isLink(text) -> Content.Link(text)
             else -> Content.Text(raw)
         }
@@ -83,10 +93,27 @@ object Payload {
         is Content.Email -> "MATMSG:TO:${esc(content.to)};SUB:${esc(content.subject)};BODY:${esc(content.body)};;"
         is Content.Sms -> "SMSTO:" + content.number.filter { it.isDigit() || it == '+' } + ":" + content.body
         is Content.Place -> "geo:${content.lat},${content.lng}"
+        is Content.Event -> buildString {
+            append("BEGIN:VEVENT\n")
+            if (content.title.isNotBlank()) append("SUMMARY:").append(icsEsc(content.title)).append('\n')
+            val start = content.start
+            if (start != null && content.allDay) {
+                append("DTSTART;VALUE=DATE:").append(start.format(ICS_DATE)).append('\n')
+                content.end?.let { append("DTEND;VALUE=DATE:").append(it.toLocalDate().plusDays(1).format(ICS_DATE)).append('\n') }
+            } else if (start != null) {
+                append("DTSTART:").append(start.format(ICS_TIME)).append('\n')
+                content.end?.let { append("DTEND:").append(it.format(ICS_TIME)).append('\n') }
+            }
+            if (content.place.isNotBlank()) append("LOCATION:").append(icsEsc(content.place)).append('\n')
+            append("END:VEVENT")
+        }
     }
 
     /** Why a form can't be made into a code yet, or null when it can. */
     fun problem(content: Content): Problem? = when {
+        content is Content.Event && content.title.isBlank() -> Problem.EMPTY
+        content is Content.Event && content.start == null -> Problem.BAD_DATE
+        content is Content.Event && content.end != null && content.start.let { it != null && content.end < it } -> Problem.BAD_END
         build(content).length > MAX -> Problem.TOO_LONG
         content is Content.Text && content.text.isBlank() -> Problem.EMPTY
         content is Content.Link && !isLink(build(content)) -> Problem.BAD_LINK
@@ -99,7 +126,7 @@ object Payload {
         else -> null
     }
 
-    enum class Problem { EMPTY, TOO_LONG, BAD_LINK, WIFI_PASSWORD, BAD_NUMBER, BAD_EMAIL }
+    enum class Problem { EMPTY, TOO_LONG, BAD_LINK, WIFI_PASSWORD, BAD_NUMBER, BAD_EMAIL, BAD_DATE, BAD_END }
 
     /** A short line for lists: the network, the name, the link… */
     fun title(content: Content): String = when (content) {
@@ -111,7 +138,33 @@ object Payload {
         is Content.Email -> content.to
         is Content.Sms -> content.number
         is Content.Place -> "%.5f, %.5f".format(java.util.Locale.ROOT, content.lat, content.lng)
+        is Content.Event -> content.title.ifBlank { content.start?.let { momentText(it, content.allDay) }.orEmpty() }.take(80)
     }
+
+    // ---- dates of events ----
+
+    private val ICS_TIME = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss")
+    private val ICS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd")
+    private val SHOWN = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+    private val SHOWN_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    private val MOMENT = Regex("""(?:(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})/(\d{1,2})/(\d{4}))(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?""")
+
+    /**
+     * A date and time typed in «Crear» or sent by MCP: «24/11/2026 18:30», «2026-11-24 18:30», «2026-11-24T18:30» or a
+     * date alone. Returns the moment and whether it had a time, or null when it isn't a real date.
+     */
+    fun moment(text: String): Pair<LocalDateTime, Boolean>? {
+        val m = MOMENT.matchEntire(text.trim()) ?: return null
+        val g = m.groupValues
+        return runCatching {
+            val date = if (g[1].isNotEmpty()) LocalDate.of(g[1].toInt(), g[2].toInt(), g[3].toInt()) else LocalDate.of(g[6].toInt(), g[5].toInt(), g[4].toInt())
+            val time = if (g[7].isNotEmpty()) LocalTime.of(g[7].toInt(), g[8].toInt(), g[9].ifEmpty { "0" }.toInt()) else null
+            date.atTime(time ?: LocalTime.MIDNIGHT) to (time != null)
+        }.getOrNull()
+    }
+
+    /** How «Crear» shows a moment: «24/11/2026 18:30», or only the date. */
+    fun momentText(at: LocalDateTime, dateOnly: Boolean = false): String = at.format(if (dateOnly) SHOWN_DATE else SHOWN)
 
     // ---- reading ----
 
@@ -145,6 +198,38 @@ object Payload {
     private fun sms(text: String): Content {
         val rest = text.substringAfter(':')
         return Content.Sms(rest.substringBefore(':').trim(), rest.substringAfter(':', ""))
+    }
+
+    /** A VEVENT, alone or inside a VCALENDAR. Folded lines are joined; UTC times («Z») become [zone]'s time. */
+    internal fun event(text: String, zone: ZoneId): Content.Event {
+        val lines = text.replace("\r\n", "\n").replace(Regex("\n[ \t]"), "").lines()
+        val body = lines.dropWhile { !it.trim().equals("BEGIN:VEVENT", true) }.drop(1).takeWhile { !it.trim().equals("END:VEVENT", true) }
+        fun line(key: String) = body.firstOrNull { it.substringBefore(':').substringBefore(';').trim().equals(key, true) }
+        fun value(key: String) = line(key)?.substringAfter(':').orEmpty().trim()
+        fun time(key: String): Pair<LocalDateTime, Boolean>? {
+            val v = value(key).ifEmpty { return null }
+            return runCatching {
+                when {
+                    v.length == 8 -> LocalDate.parse(v, ICS_DATE).atStartOfDay() to true
+                    v.endsWith("Z", true) -> LocalDateTime.parse(v.dropLast(1), ICS_TIME).atOffset(ZoneOffset.UTC).atZoneSameInstant(zone).toLocalDateTime() to false
+                    else -> LocalDateTime.parse(v.take(15), ICS_TIME) to false
+                }
+            }.getOrNull()
+        }
+        val start = time("DTSTART")
+        val allDay = start?.second == true
+        // An all‑day DTEND is the day after the last one; an end that isn't after the start is dropped.
+        val end = time("DTEND")?.first?.let { if (allDay) it.minusDays(1) else it }?.takeIf { start == null || it > start.first }
+        return Content.Event(icsUnesc(value("SUMMARY")), start?.first, end, icsUnesc(value("LOCATION")), allDay)
+    }
+
+    private fun icsEsc(s: String) = s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\r\n", "\\n").replace("\n", "\\n")
+
+    private fun icsUnesc(s: String) = buildString {
+        var i = 0
+        while (i < s.length) {
+            if (s[i] == '\\' && i + 1 < s.length) { append(if (s[i + 1] == 'n' || s[i + 1] == 'N') '\n' else s[i + 1]); i += 2 } else { append(s[i]); i++ }
+        }
     }
 
     private fun geo(text: String): Content? {

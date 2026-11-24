@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
+import android.provider.CalendarContract
 import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
@@ -38,6 +39,7 @@ class Openers(private val context: Context) {
                 .putExtra(ContactsContract.Intents.Insert.EMAIL, c.email).putExtra(ContactsContract.Intents.Insert.COMPANY, c.org)
                 .putExtra(ContactsContract.Intents.Insert.NOTES, c.note)
             is Content.Wifi -> wifi(c)
+            is Content.Event -> event(c) ?: return
             is Content.Text -> return
         }
         start(intent)
@@ -54,17 +56,29 @@ class Openers(private val context: Context) {
         return Intent(Settings.ACTION_WIFI_SETTINGS)
     }
 
+    /** «Añadir al calendario»: the calendar app's own new‑event page, filled in; the user saves it there. */
+    private fun event(c: Content.Event): Intent? {
+        val zone = java.time.ZoneId.systemDefault()
+        val start = c.start ?: return null
+        return Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
+            .putExtra(CalendarContract.Events.TITLE, c.title).putExtra(CalendarContract.Events.EVENT_LOCATION, c.place)
+            .putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, c.allDay)
+            .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, start.atZone(zone).toInstant().toEpochMilli())
+            .apply { c.end?.let { putExtra(CalendarContract.EXTRA_EVENT_END_TIME, (if (c.allDay) it.plusDays(1) else it).atZone(zone).toInstant().toEpochMilli()) } }
+    }
+
     fun copy(text: String, message: Int = R.string.copied) {
         context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("QR", text))
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
-    /** QR codes go as a picture (and their text); bar codes as text. */
+    /** QR codes and the bar codes «Crear» makes go as a picture (and their text); other bar codes as text. */
     fun share(e: Entry) {
         val send = Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_TEXT, e.text)
-        if (e.isQr) {
+        val png = Codes.picture(e.text, e.format)
+        if (png != null) {
             val dir = File(context.cacheDir, "share").apply { mkdirs() }
-            val file = File(dir, "qr.png").apply { writeBytes(Codes.png(Codes.encode(e.text, margin = 4))) }
+            val file = File(dir, "qr.png").apply { writeBytes(png) }
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
             send.setType("image/png").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             send.clipData = ClipData.newRawUri("QR", uri)
@@ -83,10 +97,28 @@ class Openers(private val context: Context) {
         val resolver = context.contentResolver
         val ok = runCatching {
             val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: error("no uri")
-            resolver.openOutputStream(uri)?.use { it.write(Codes.png(Codes.encode(e.text, margin = 4))) } ?: error("no stream")
+            val png = Codes.picture(e.text, e.format) ?: error("no picture")
+            resolver.openOutputStream(uri)?.use { it.write(png) } ?: error("no stream")
         }.isSuccess
         Toast.makeText(context, if (ok) R.string.saved_image else R.string.not_saved, Toast.LENGTH_SHORT).show()
     }
+
+    /** «Exportar»: the CSV into the file the user created in Android's file picker. */
+    fun writeText(uri: android.net.Uri, text: String): Boolean =
+        runCatching { context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(text.toByteArray(Charsets.UTF_8)) } ?: error("no stream") }.isSuccess
+
+    /** «Importar»: the file the user picked, as text (at most [max] characters); null when it can't be read. */
+    fun readText(uri: android.net.Uri, max: Int): String? = runCatching {
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            val buf = CharArray(8192); val out = StringBuilder()
+            input.bufferedReader(Charsets.UTF_8).use { r -> while (out.length < max) { val n = r.read(buf); if (n < 0) break; out.append(buf, 0, n) } }
+            out.toString()
+        }
+    }.getOrNull()
+
+    /** The text on the clipboard, or null. */
+    fun paste(): String? = context.getSystemService(ClipboardManager::class.java)?.primaryClip?.takeIf { it.itemCount > 0 }
+        ?.getItemAt(0)?.coerceToText(context)?.toString()?.takeIf { it.isNotBlank() }
 
     private fun start(intent: Intent) {
         try { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }

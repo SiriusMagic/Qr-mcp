@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Cameraswitch
 import androidx.compose.material.icons.outlined.FlashlightOff
 import androidx.compose.material.icons.outlined.FlashlightOn
 import androidx.compose.material.icons.outlined.Image
@@ -41,11 +42,12 @@ import com.zirakusa.qr.ui.theme.QrColors
 
 /**
  * «Escanear»: the camera full screen with a frame in the middle; light and «Desde imagen» below, Ajustes on top.
- * Without the camera permission, a card that asks for it (a picture can still be read).
+ * Without the camera permission, a card that asks for it (a picture can still be read). A code waiting for «Usar»
+ * («Confirmar escaneos manualmente») replaces the tools; «Escaneo continuo» notes each code on top.
  */
 @Composable fun ScanScreen(state: QrState, actions: AppActions) = Box(Modifier.fillMaxSize().background(Color.Black)) {
     if (state.cameraAllowed) {
-        actions.camera(Modifier.fillMaxSize(), state.page == Page.MAIN, state.torch)
+        actions.camera(Modifier.fillMaxSize(), state.page == Page.MAIN && state.pending == null, state.torch)
         Frame(Modifier.align(Alignment.Center))
         Text(stringResource(R.string.scan_hint), Modifier.align(Alignment.Center).padding(top = 330.dp).clip(CircleShape)
             .background(Color(0x99000000)).padding(horizontal = 18.dp, vertical = 8.dp), color = Color.White, fontSize = 15.sp)
@@ -60,14 +62,19 @@ import com.zirakusa.qr.ui.theme.QrColors
         Text(stringResource(R.string.app_name), Modifier.weight(1f).padding(start = 8.dp), color = Color.White, fontSize = 24.sp)
         RoundButton(Icons.Outlined.Settings, stringResource(R.string.settings)) { state.page = Page.SETTINGS }
     }
-    Row(Modifier.align(Alignment.BottomCenter).padding(bottom = 110.dp), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-        if (state.cameraAllowed) Tool(if (state.torch) Icons.Outlined.FlashlightOn else Icons.Outlined.FlashlightOff,
+    val pending = state.pending
+    if (pending != null) PendingCard(state, pending, actions, Modifier.align(Alignment.BottomCenter))
+    else Row(Modifier.align(Alignment.BottomCenter).padding(bottom = 110.dp), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+        if (state.cameraAllowed) Tool(Icons.Outlined.Cameraswitch, stringResource(R.string.switch_camera), state.frontCamera) {
+            state.changeFrontCamera(!state.frontCamera) }
+        if (state.cameraAllowed && !state.frontCamera) Tool(if (state.torch) Icons.Outlined.FlashlightOn else Icons.Outlined.FlashlightOff,
             stringResource(R.string.torch), state.torch) { state.torch = !state.torch }
         Tool(Icons.Outlined.Image, stringResource(R.string.from_image), false, actions.pickImage)
     }
+    state.quick?.let { QuickNote(state, it, Modifier.align(Alignment.TopCenter)) }
 }
 
-@Composable private fun Tool(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, on: Boolean, onClick: () -> Unit) =
+@Composable fun Tool(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, on: Boolean, onClick: () -> Unit) =
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.size(60.dp).clip(CircleShape).background(if (on) QrColors.Accent else Color(0x33FFFFFF)).clickable(onClickLabel = label, onClick = onClick),
             contentAlignment = Alignment.Center) { Icon(icon, label, tint = if (on) QrColors.OnAccent else Color.White) }

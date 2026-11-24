@@ -6,6 +6,7 @@ import com.google.zxing.DecodeHintType
 import com.google.zxing.EncodeHintType
 import com.google.zxing.LuminanceSource
 import com.google.zxing.MultiFormatReader
+import com.google.zxing.MultiFormatWriter
 import com.google.zxing.NotFoundException
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.RGBLuminanceSource
@@ -20,6 +21,12 @@ import java.util.zip.Deflater
 /** A square grid of dark (true) and light modules, with its quiet margin. */
 class Grid(val size: Int, private val cells: BooleanArray) {
     operator fun get(x: Int, y: Int) = cells[y * size + x]
+}
+
+/** A bar code as one row of dark (true) and light modules, with its quiet margin. */
+class Bars(private val modules: BooleanArray) {
+    val size get() = modules.size
+    operator fun get(x: Int) = modules[x]
 }
 
 /** What was read: the text and its format («QR_CODE», «EAN_13»…). */
@@ -40,6 +47,19 @@ object Codes {
             EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M)
         val m = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 0, 0, hints)
         return Grid(m.width, BooleanArray(m.width * m.height) { m.get(it % m.width, it / m.width) })
+    }
+
+    /** A bar code for [text], already checked with [Barcodes.problem]; null when ZXing still refuses it. */
+    fun bars(text: String, format: BarFormat): Bars? = runCatching {
+        val m = MultiFormatWriter().encode(text, BarcodeFormat.valueOf(format.format), 0, 1, mapOf(EncodeHintType.MARGIN to 10))
+        Bars(BooleanArray(m.width) { m.get(it, 0) })
+    }.getOrNull()
+
+    /** The picture to share or save: the QR code, or the bar code for the formats «Crear» makes; null otherwise. */
+    fun picture(text: String, format: String): ByteArray? {
+        if (format == Entry.QR) return runCatching { png(encode(text, margin = 4)) }.getOrNull()
+        val f = BarFormat.from(format) ?: return null
+        return bars(text, f)?.let { png(it) }
     }
 
     /** A camera frame (its brightness plane): the code in it, also turned a quarter for bar codes held sideways. */
@@ -78,17 +98,21 @@ object Codes {
     }
 
     /** The grid as a black‑on‑white PNG, [scale] pixels a module: for «Compartir» and for the AI. */
-    fun png(grid: Grid, scale: Int = 10): ByteArray {
-        val side = grid.size * scale
-        val raw = ByteArray((side + 1) * side)
-        for (y in 0 until side) {
-            val row = y * (side + 1)
+    fun png(grid: Grid, scale: Int = 10): ByteArray = png(grid.size * scale, grid.size * scale) { x, y -> grid[x / scale, y / scale] }
+
+    /** The bars as a black‑on‑white PNG, [scale] pixels a module and [height] pixels high. */
+    fun png(bars: Bars, scale: Int = 4, height: Int = 240): ByteArray = png(bars.size * scale, height) { x, _ -> bars[x / scale] }
+
+    private fun png(width: Int, height: Int, dark: (Int, Int) -> Boolean): ByteArray {
+        val raw = ByteArray((width + 1) * height)
+        for (y in 0 until height) {
+            val row = y * (width + 1)
             raw[row] = 0 // no filter
-            for (x in 0 until side) raw[row + 1 + x] = if (grid[x / scale, y / scale]) 0 else 0xFF.toByte()
+            for (x in 0 until width) raw[row + 1 + x] = if (dark(x, y)) 0 else 0xFF.toByte()
         }
         val out = ByteArrayOutputStream()
         out.write(byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 13, 10, 26, 10))
-        chunk(out, "IHDR", ByteArrayOutputStream().apply { int(side); int(side); write(8); write(0); write(0); write(0); write(0) }.toByteArray())
+        chunk(out, "IHDR", ByteArrayOutputStream().apply { int(width); int(height); write(8); write(0); write(0); write(0); write(0) }.toByteArray())
         chunk(out, "IDAT", deflate(raw))
         chunk(out, "IEND", ByteArray(0))
         return out.toByteArray()

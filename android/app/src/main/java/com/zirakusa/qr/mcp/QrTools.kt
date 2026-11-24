@@ -51,6 +51,10 @@ object QrTools {
         "email" to prop("string", "type contact or email: address."), "org" to prop("string", "type contact: company."),
         "note" to prop("string", "type contact: note."), "subject" to prop("string", "type email: subject."),
         "body" to prop("string", "type email or sms: message."),
+        "title" to prop("string", "type event: what it is."),
+        "start" to prop("string", "type event: when it starts, local time: 2026-11-24T18:30 (or a date alone, 2026-11-24, for all day)."),
+        "end" to prop("string", "type event: when it ends (optional), same shape as start."),
+        "location" to prop("string", "type event: where (optional)."),
     )
 
     val tools = listOf(
@@ -62,7 +66,7 @@ object QrTools {
             schema(listOf("id"), "id" to prop("integer", "From qr_history."), "image" to prop("boolean", "Add the picture (QR codes only)."))),
         Tool("qr_parse", "Looks inside the text of a code without saving it: kind, fields and link warnings. Nothing is opened.", false,
             schema(listOf("text"), "text" to prop("string", "Up to ${Payload.MAX} characters."))),
-        Tool("qr_make", "Makes a QR code picture (PNG) for a text, link, Wi‑Fi, contact, phone, email or SMS, without saving it.", false,
+        Tool("qr_make", "Makes a QR code picture (PNG) for a text, link, Wi‑Fi, contact, phone, email, SMS or calendar event, without saving it.", false,
             schema(listOf("type"), *createProps)),
         Tool("qr_create", "Like qr_make, and keeps the code in the phone's history (when the user keeps a history).", true,
             schema(listOf("type"), *createProps)),
@@ -107,7 +111,7 @@ object QrTools {
 
     private fun make(args: JSONObject, data: QrData?): ToolOutput {
         val type = Type.from(args.optString("type")).takeIf { it != null && it != Type.PLACE }
-            ?: throw ToolFailure("BAD_ARGUMENT", "«type» is text, link, wifi, contact, phone, email or sms.")
+            ?: throw ToolFailure("BAD_ARGUMENT", "«type» is text, link, wifi, contact, phone, email, sms or event.")
         fun s(key: String, max: Int = 500) = text(args, key, max)
         val content = when (type) {
             Type.TEXT -> Content.Text(s("text", Payload.MAX))
@@ -119,6 +123,13 @@ object QrTools {
             Type.PHONE -> Content.Phone(s("phone", 40))
             Type.EMAIL -> Content.Email(s("email", 100), s("subject", 200), s("body", 1000))
             Type.SMS -> Content.Sms(s("phone", 40), s("body", 1000))
+            Type.EVENT -> {
+                fun moment(key: String) = s(key, 40).takeIf { it.isNotBlank() }?.let {
+                    Payload.moment(it) ?: throw ToolFailure("BAD_ARGUMENT", "«$key» is a date like 2026-11-24T18:30 or 2026-11-24.")
+                }
+                val start = moment("start"); val end = moment("end")
+                Content.Event(s("title", 200), start?.first, end?.first, s("location", 200), allDay = start != null && !start.second)
+            }
             Type.PLACE -> throw ToolFailure("BAD_ARGUMENT", "«type» can't be place.")
         }
         Payload.problem(content)?.let { throw ToolFailure("BAD_ARGUMENT", problemText(it)) }
@@ -133,12 +144,14 @@ object QrTools {
     }
 
     private fun problemText(p: Payload.Problem) = when (p) {
-        Payload.Problem.EMPTY -> "Nothing to put in the code: fill the main field (text, url, ssid or name)."
+        Payload.Problem.EMPTY -> "Nothing to put in the code: fill the main field (text, url, ssid, name or title)."
         Payload.Problem.TOO_LONG -> "Too long for a code that phones read well (${Payload.MAX} characters at most)."
         Payload.Problem.BAD_LINK -> "«url» is not an http(s) address."
         Payload.Problem.WIFI_PASSWORD -> "A WPA password has 8–63 characters."
         Payload.Problem.BAD_NUMBER -> "«phone» needs at least 3 digits."
         Payload.Problem.BAD_EMAIL -> "«email» is not an address."
+        Payload.Problem.BAD_DATE -> "«start» is missing: a date like 2026-11-24T18:30 or 2026-11-24."
+        Payload.Problem.BAD_END -> "«end» is before «start»."
     }
 
     /** What a code holds, as fields; links also carry their real site and warnings. */
@@ -153,6 +166,8 @@ object QrTools {
             is Content.Email -> o.put("email", c.to).put("subject", c.subject).put("body", c.body)
             is Content.Sms -> o.put("phone", c.number).put("body", c.body)
             is Content.Place -> o.put("lat", c.lat).put("lng", c.lng)
+            is Content.Event -> o.put("title", c.title).put("start", c.start?.let { if (c.allDay) it.toLocalDate().toString() else it.toString() } ?: "")
+                .put("end", c.end?.let { if (c.allDay) it.toLocalDate().toString() else it.toString() } ?: "").put("location", c.place).put("all_day", c.allDay)
         }
         return o
     }

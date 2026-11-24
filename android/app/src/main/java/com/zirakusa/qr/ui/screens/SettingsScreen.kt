@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.zirakusa.qr.BuildConfig
 import com.zirakusa.qr.R
 import com.zirakusa.qr.mcp.McpMode
@@ -29,7 +31,7 @@ import com.zirakusa.qr.ui.Page
 import com.zirakusa.qr.ui.QrState
 import com.zirakusa.qr.ui.theme.QrColors
 
-/** «Ajustes»: reading, history, Modo MCP, Temas, privacy and version. */
+/** «Ajustes»: reading (barcodes, vibrate, sound, copy, continuous, confirm, camera), history, Modo MCP, Temas, privacy and version. */
 @Composable fun SettingsScreen(state: QrState, toast: (String) -> Unit) {
     var privacy by remember { mutableStateOf(false) }
     var clearing by remember { mutableStateOf(false) }
@@ -41,10 +43,27 @@ import com.zirakusa.qr.ui.theme.QrColors
             SwitchItem(stringResource(R.string.barcodes), stringResource(R.string.barcodes_hint), state.barcodes, onChange = state::changeBarcodes)
             Divider()
             SwitchItem(stringResource(R.string.vibrate), null, state.vibrate, onChange = state::changeVibrate)
+            Divider()
+            SwitchItem(stringResource(R.string.sound), null, state.sound, onChange = state::changeSound)
+            Divider()
+            SwitchItem(stringResource(R.string.auto_copy), stringResource(R.string.auto_copy_hint), state.autoCopy, onChange = state::changeAutoCopy)
+            Divider()
+            SwitchItem(stringResource(R.string.continuous), stringResource(R.string.continuous_hint), state.continuous, onChange = state::changeContinuous)
+            Divider()
+            SwitchItem(stringResource(R.string.confirm), stringResource(R.string.confirm_hint), state.confirm, onChange = state::changeConfirm)
+            Divider()
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.camera), fontSize = 18.sp)
+                Segmented(listOf(stringResource(R.string.camera_back), stringResource(R.string.camera_front)), if (state.frontCamera) 1 else 0,
+                    Modifier.fillMaxWidth()) { state.changeFrontCamera(it == 1) }
+            }
         }
         Caption(stringResource(R.string.tab_history))
         Group {
             SwitchItem(stringResource(R.string.keep_history), stringResource(R.string.keep_history_hint), state.keepHistory, onChange = state::changeKeepHistory)
+            Divider()
+            SwitchItem(stringResource(R.string.duplicates), stringResource(R.string.duplicates_hint), state.duplicates, enabled = state.keepHistory,
+                onChange = state::changeDuplicates)
             Divider()
             Item(stringResource(R.string.clear_history), stringResource(R.string.clear_history_hint), onClick = { clearing = true })
         }

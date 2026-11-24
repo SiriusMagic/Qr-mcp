@@ -22,7 +22,6 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -35,23 +34,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zirakusa.qr.R
+import com.zirakusa.qr.data.BarFormat
 import com.zirakusa.qr.data.Content
 import com.zirakusa.qr.data.Entry
 import com.zirakusa.qr.data.LinkCheck
 import com.zirakusa.qr.data.Security
-import com.zirakusa.qr.data.Warning
 import com.zirakusa.qr.ui.AppActions
 import com.zirakusa.qr.ui.QrState
 import com.zirakusa.qr.ui.theme.QrColors
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
-private val Amber = Color(0xFFF5B83D)
 
 /**
  * One code: what it holds, the real site and warnings for links, the code itself, the action that fits (open, call,
@@ -75,11 +74,13 @@ private val Amber = Color(0xFFF5B83D)
             if (c is Content.Link) LinkCard(c.url)
             Group { Fields(e) }
             ActionButton(c, e, actions)
+            val bar = BarFormat.from(e.format)
             if (e.isQr) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { QrImage(e.text, side = 220.dp) }
+            else if (bar != null) BarImage(e.text, bar, Modifier.fillMaxWidth())
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Small(Icons.Outlined.ContentCopy, R.string.copy) { actions.copy(e.text) }
                 Small(Icons.Outlined.Share, R.string.share) { actions.share(e) }
-                if (e.isQr) Small(Icons.Outlined.Download, R.string.save_image) { actions.saveImage(e) }
+                if (e.isQr || bar != null) Small(Icons.Outlined.Download, R.string.save_image) { actions.saveImage(e) }
                 if (e.id != 0L) {
                     Small(if (e.favorite) Icons.Filled.Star else Icons.Outlined.StarBorder, R.string.favorite, e.favorite) { state.toggleFavorite(e) }
                     Small(Icons.AutoMirrored.Outlined.Label, R.string.rename) { naming = true }
@@ -93,29 +94,6 @@ private val Amber = Color(0xFFF5B83D)
     if (deleting) AlertDialog({ deleting = false }, title = { Text(stringResource(R.string.delete_title)) },
         confirmButton = { TextButton({ deleting = false; state.delete(e) }) { Text(stringResource(R.string.delete), color = QrColors.Danger) } },
         dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel), color = QrColors.Text) } })
-}
-
-/** The real site, big, and what to look at before opening it. */
-@Composable private fun LinkCard(url: String) {
-    val check = LinkCheck.check(url) ?: return
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(if (check.warnings.isEmpty()) QrColors.Card else Amber.copy(alpha = 0.16f))
-        .padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(R.string.real_site), color = QrColors.Muted, fontSize = 13.sp)
-        Text(check.host, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-        if (check.warnings.isEmpty()) Text(stringResource(R.string.no_warnings), color = QrColors.Muted, fontSize = 14.sp)
-        check.warnings.forEach { w ->
-            Row(verticalAlignment = Alignment.Top) {
-                Icon(Icons.Outlined.WarningAmber, null, tint = Amber)
-                Text(stringResource(warningText(w)), Modifier.padding(start = 8.dp), fontSize = 15.sp)
-            }
-        }
-    }
-}
-
-fun warningText(w: Warning) = when (w) {
-    Warning.NOT_HTTPS -> R.string.w_not_https; Warning.IP_ADDRESS -> R.string.w_ip; Warning.LOOKALIKE -> R.string.w_lookalike
-    Warning.SHORTENER -> R.string.w_shortener; Warning.USER_INFO -> R.string.w_user_info; Warning.ODD_PORT -> R.string.w_port
-    Warning.APP_DOWNLOAD -> R.string.w_apk
 }
 
 @Composable private fun Fields(e: Entry) {
@@ -134,6 +112,15 @@ fun warningText(w: Warning) = when (w) {
         is Content.Email -> listOf(R.string.f_email to c.to, R.string.f_subject to c.subject, R.string.f_body to c.body).filter { it.second.isNotBlank() }
         is Content.Sms -> listOf(R.string.f_phone to c.number, R.string.f_body to c.body).filter { it.second.isNotBlank() }
         is Content.Place -> listOf(R.string.f_place to raw.removePrefix("geo:"))
+        is Content.Event -> {
+            val l = locale()
+            fun shown(t: java.time.LocalDateTime?) = t?.let {
+                if (c.allDay) DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(l).format(it)
+                else DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(l).format(it)
+            }.orEmpty()
+            listOf(R.string.f_title to c.title, R.string.f_start to shown(c.start), R.string.f_end to shown(c.end), R.string.f_location to c.place)
+                .filter { it.second.isNotBlank() }
+        }
     }
     rows.forEachIndexed { i, (label, value) ->
         if (i > 0) Divider()
@@ -151,7 +138,7 @@ fun warningText(w: Warning) = when (w) {
     val label = when (c) {
         is Content.Link -> R.string.a_open; is Content.Wifi -> R.string.a_wifi; is Content.Contact -> R.string.a_contact
         is Content.Phone -> R.string.a_call; is Content.Email -> R.string.a_email; is Content.Sms -> R.string.a_sms
-        is Content.Place -> R.string.a_map; is Content.Text -> return
+        is Content.Place -> R.string.a_map; is Content.Event -> R.string.a_calendar; is Content.Text -> return
     }
     var risky by remember { mutableStateOf(false) }
     val warned = c is Content.Link && LinkCheck.check(c.url)?.warnings.orEmpty().isNotEmpty()

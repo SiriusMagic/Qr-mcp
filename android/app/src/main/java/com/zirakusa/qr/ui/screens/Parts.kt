@@ -3,6 +3,9 @@ package com.zirakusa.qr.ui.screens
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -12,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Person
@@ -37,6 +41,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zirakusa.qr.R
+import com.zirakusa.qr.data.BarFormat
 import com.zirakusa.qr.data.Codes
 import com.zirakusa.qr.data.Entry
 import com.zirakusa.qr.data.Type
@@ -64,11 +69,25 @@ import com.zirakusa.qr.ui.theme.QrColors
     }
 }
 
+/** A bar code drawn black on white, with its text under it. Nothing when ZXing can't draw it. */
+@Composable fun BarImage(text: String, format: BarFormat, modifier: Modifier = Modifier, height: Dp = 120.dp) {
+    val bars = remember(text, format) { Codes.bars(text, format) } ?: return
+    val label = stringResource(R.string.barcode)
+    Column(modifier.clip(RoundedCornerShape(20.dp)).background(Color.White).padding(vertical = 12.dp).semantics { contentDescription = label },
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Canvas(Modifier.fillMaxWidth().height(height)) {
+            val cell = size.width / bars.size
+            for (x in 0 until bars.size) if (bars[x]) drawRect(Color.Black, Offset(x * cell, 0f), Size(cell + 0.5f, size.height))
+        }
+        Text(text, Modifier.padding(top = 6.dp), color = Color.Black, fontSize = 16.sp, letterSpacing = 2.sp)
+    }
+}
+
 /** The icon of each kind of code. */
 fun typeIcon(t: Type): ImageVector = when (t) {
     Type.TEXT -> Icons.AutoMirrored.Outlined.Notes; Type.LINK -> Icons.Outlined.Link; Type.WIFI -> Icons.Outlined.Wifi
     Type.CONTACT -> Icons.Outlined.Person; Type.PHONE -> Icons.Outlined.Call; Type.EMAIL -> Icons.Outlined.Email
-    Type.SMS -> Icons.Outlined.Sms; Type.PLACE -> Icons.Outlined.Place
+    Type.SMS -> Icons.Outlined.Sms; Type.EVENT -> Icons.Outlined.Event; Type.PLACE -> Icons.Outlined.Place
 }
 
 /** A bar code (product, book…) holding plain text: named and drawn as one. */

@@ -1,3 +1,22 @@
+# QR 0.2.0
+
+- **Ajustes de lectura nuevos**: «Reproducir sonido» (pitido), «Copiar al portapapeles» al leer, «Escaneo continuo» (sigue
+  leyendo y guarda cada código en el historial con una nota breve, sin abrirlo), «Confirmar escaneos manualmente» (muestra
+  el código y espera «Usar código») y «Cámara» trasera o frontal (también con el botón «Cambiar cámara»). Todos apagados
+  de fábrica, salvo la cámara trasera.
+- **Guardar duplicados** en Ajustes › Historial: apagado (de fábrica), un código repetido sube arriba en vez de repetirse.
+- **Crear evento**: título, inicio, fin y lugar → QR de calendario (VEVENT). Al leer uno, «Añadir al calendario» abre tu
+  calendario con los datos para que lo guardes tú.
+- **Crear códigos de barras**: EAN‑13, EAN‑8, UPC‑A (el dígito de control se calcula o se comprueba), Code 128 y Code 39;
+  se pueden compartir y guardar como imagen.
+- **Desde el portapapeles** en «Crear», y **compartir texto** desde otra app hacia QR: llena «Crear», no abre nada.
+- **Historial › menú**: «Exportar (CSV)» e «Importar (CSV)» con el selector de archivos de Android, y «Borrar todo» (pide
+  confirmar; también borra favoritos).
+- La barra de abajo tiene ahora **Ajustes**.
+- Modo MCP: `qr_make` y `qr_create` hacen también eventos (`title`, `start`, `end`, `location`).
+- Sin anuncios y sin internet nuevo; los enlaces siguen sin abrirse solos.
+- 24 pruebas.
+
 # QR 0.1.1
 
 - **Conectar todas** (Gateway Hub 0.0.21): con un toque en el Hub se activa aquí «Redireccionar a Hub» y la app queda
