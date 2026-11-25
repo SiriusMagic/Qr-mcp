@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
             askCamera = { camera.launch(Manifest.permission.CAMERA) },
             pickImage = { picture.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
             open = openers::open, copy = { openers.copy(it) }, share = openers::share, saveImage = openers::saveImage,
-            toast = { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }, copyLink = ::copyLink, goToHub = ::goToHub,
+            toast = { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }, openArka = ::openArka,
             handled = ::handled, paste = openers::paste,
             exportHistory = { exportFile.launch("QR-${getString(R.string.tab_history).lowercase()}-${java.time.LocalDate.now()}.csv") },
             importHistory = { importFile.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) },
@@ -142,7 +142,6 @@ class MainActivity : ComponentActivity() {
 
     private fun back() = when (state.page) {
         Page.SHARE_CONTACT -> if (state.share.step == com.zirakusa.qr.ui.ContactShare.Step.CODE) state.share.back() else { state.share.clear(); state.page = Page.MAIN }
-        Page.MCP -> state.page = Page.SETTINGS
         Page.RESULT -> state.closeResult()
         Page.SETTINGS -> state.page = Page.MAIN
         Page.MAIN -> if (state.pending != null) state.dropPending() else state.tab = Tab.SCAN
@@ -194,16 +193,11 @@ class MainActivity : ComponentActivity() {
         if (read != null) found(read, Source.IMAGE) else Toast.makeText(this@MainActivity, R.string.no_code, Toast.LENGTH_LONG).show()
     }
 
-    private fun copyLink(link: String) {
-        getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("QR MCP", link))
-        Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
-    }
 
-    /** «Ir al Hub»: copies the hub's link (in case it must be pasted) and opens the Gateway Hub app. */
-    private fun goToHub() {
-        getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("QR › Gateway Hub", McpMode.hubLink()))
+    /** «Modo MCP» in Ajustes: it is turned on, allowed on the phone and given tokens in Arka, so this opens Arka. */
+    private fun openArka() {
         val open = packageManager.getLaunchIntentForPackage("com.zirakusa.gatewayhub")
-        if (open != null) startActivity(open) else Toast.makeText(this, R.string.mcp_paste_in_hub, Toast.LENGTH_LONG).show()
+        if (open != null) startActivity(open) else Toast.makeText(this, R.string.mcp_no_arka, Toast.LENGTH_LONG).show()
     }
 
     companion object { const val MAX_SIDE = 1600 }

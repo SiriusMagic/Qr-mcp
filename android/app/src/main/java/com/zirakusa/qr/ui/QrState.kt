@@ -24,7 +24,7 @@ import com.zirakusa.qr.ui.theme.ThemeMode
 enum class Tab { SCAN, CREATE, HISTORY }
 
 /** What covers the tabs: nothing, one code, Ajustes or Modo MCP. */
-enum class Page { MAIN, RESULT, SETTINGS, MCP, SHARE_CONTACT }
+enum class Page { MAIN, RESULT, SETTINGS, SHARE_CONTACT }
 
 /** The fields of «Crear», kept while switching kinds so nothing typed is lost. */
 data class Form(val text: String = "", val url: String = "", val ssid: String = "", val password: String = "", val security: Security = Security.WPA,

@@ -27,6 +27,7 @@ import com.zirakusa.qr.data.Detail
 import com.zirakusa.qr.data.VCard
 import com.zirakusa.qr.ui.ContactShare
 import com.zirakusa.qr.ui.theme.QrColors
+import androidx.compose.ui.res.pluralStringResource
 
 fun detailName(k: Detail.Kind) = when (k) {
     Detail.Kind.NAME -> R.string.f_name; Detail.Kind.PHONE -> R.string.f_phone; Detail.Kind.EMAIL -> R.string.f_email
@@ -59,7 +60,7 @@ fun problemName(p: VCard.Problem) = when (p) { VCard.Problem.NO_NAME_OR_PHONE ->
             Text(d.value, fontSize = 15.sp)
         }
     }
-    Text(stringResource(R.string.preview_size, share.vcard.toByteArray(Charsets.UTF_8).size), color = QrColors.Muted, fontSize = 12.sp)
+    Text(share.vcard.toByteArray(Charsets.UTF_8).size.let { pluralStringResource(R.plurals.preview_size, it, it) }, color = QrColors.Muted, fontSize = 12.sp)
 }
 
 /** «Compartir»: asks first, listing what goes, then Android's own sheet where the person picks the app. */

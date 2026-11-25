@@ -20,6 +20,8 @@ import com.zirakusa.qr.data.Grid
 import java.io.ByteArrayOutputStream
 import kotlin.math.cos
 import kotlin.math.sin
+import androidx.core.graphics.scale
+import androidx.core.graphics.createBitmap
 
 /** A finished code picture: its pixels, its PNG, and whether it was read back with exactly the text it carries. */
 class CardPicture(val bitmap: Bitmap, val png: ByteArray, val readable: Boolean)
@@ -34,7 +36,7 @@ object ArtCard {
     fun classic(text: String): CardPicture {
         val grid = Codes.encode(text, margin = 4)
         val scale = 12
-        val bmp = Bitmap.createBitmap(grid.size * scale, grid.size * scale, Bitmap.Config.ARGB_8888)
+        val bmp = createBitmap(grid.size * scale, grid.size * scale)
         val c = Canvas(bmp); c.drawColor(Color.WHITE)
         drawCode(c, grid, Box(0, 0, grid.size * scale, grid.size * scale), scale)
         return CardPicture(bmp, png(bmp), verify(bmp, text))
@@ -43,7 +45,7 @@ object ArtCard {
     /** The «Arbolito» card for [text] (the vCard), with [name] and [hint] («Escanéame para guardar el contacto») under it. */
     fun tree(text: String, name: String, hint: String): CardPicture {
         val grid = Codes.encode(text, margin = 4)
-        val bmp = Bitmap.createBitmap(ArtLayout.WIDTH, ArtLayout.HEIGHT, Bitmap.Config.ARGB_8888)
+        val bmp = createBitmap(ArtLayout.WIDTH, ArtLayout.HEIGHT)
         val c = Canvas(bmp)
         background(c)
         drawTree(c, ArtLayout.tree)
@@ -64,7 +66,7 @@ object ArtCard {
             return Codes.readPixels(px, b.width, b.height, withBarcodes = false)?.let { it.format == "QR_CODE" && it.text == text } == true
         }
         if (!reads(bmp)) return false
-        val half = Bitmap.createScaledBitmap(bmp, bmp.width / 2, bmp.height / 2, true)
+        val half = bmp.scale(bmp.width / 2, bmp.height / 2)
         return reads(half).also { if (half !== bmp) half.recycle() }
     }
 

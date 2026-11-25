@@ -31,7 +31,6 @@ import com.zirakusa.qr.R
 import com.zirakusa.qr.data.Entry
 import com.zirakusa.qr.ui.screens.CreateScreen
 import com.zirakusa.qr.ui.screens.HistoryScreen
-import com.zirakusa.qr.ui.screens.McpScreen
 import com.zirakusa.qr.ui.screens.ShareContactScreen
 import com.zirakusa.qr.ui.screens.ResultScreen
 import com.zirakusa.qr.ui.screens.ScanScreen
@@ -53,8 +52,7 @@ class AppActions(
     val share: (Entry) -> Unit = {},
     val saveImage: (Entry) -> Unit = {},
     val toast: (String) -> Unit = {},
-    val copyLink: (String) -> Unit = {},
-    val goToHub: () -> Unit = {},
+    val openArka: () -> Unit = {},
     /** After a code is kept and shown (or noted): «Copiar al portapapeles». */
     val handled: (Entry) -> Unit = {},
     /** «Desde el portapapeles»: the clipboard's text, or null. */
@@ -75,8 +73,7 @@ class AppActions(
 @Composable fun QrApp(state: QrState, actions: AppActions = AppActions()) {
     when (state.page) {
         Page.RESULT -> state.shown?.let { return ResultScreen(state, it, actions) }
-        Page.SETTINGS -> return SettingsScreen(state, actions.toast)
-        Page.MCP -> return McpScreen(actions.copyLink, actions.goToHub) { state.page = Page.SETTINGS }
+        Page.SETTINGS -> return SettingsScreen(state, actions.toast, actions.openArka)
         Page.SHARE_CONTACT -> return ShareContactScreen(state, actions)
         Page.MAIN -> Unit
     }
