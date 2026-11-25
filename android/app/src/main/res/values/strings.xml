@@ -122,7 +122,7 @@
     <string name="clear_history">Borrar historial</string>
     <string name="clear_history_hint">Los favoritos se quedan</string>
     <string name="clear_history_text">Se eliminan los códigos que no son favoritos. No se puede deshacer.</string>
-    <string name="privacy_text">QR no tiene anuncios ni estadísticas. La cámara lee los códigos en el teléfono, sin internet, y no guarda imágenes. El historial vive solo en este teléfono, fuera de las copias en la nube. Los enlaces nunca se abren solos: los revisas tú y los abres con un toque. Solo si activas el Modo MCP, la IA que conectes con un token puede leer tu historial (sin contraseñas de Wi‑Fi) y crear códigos; con un token de lectura y escritura también guardarlos o eliminarlos, a través del relay. Exportar e importar el historial usan solo el archivo que eliges, y el texto que compartes con QR solo llena «Crear».</string>
+    <string name="privacy_text">QR no tiene anuncios ni estadísticas. La cámara lee los códigos en el teléfono, sin internet, y no guarda imágenes. El historial vive solo en este teléfono, fuera de las copias en la nube. Los enlaces nunca se abren solos: los revisas tú y los abres con un toque. Solo si activas el Modo MCP, la IA que conectes con un token puede leer tu historial (sin contraseñas de Wi‑Fi) y crear códigos; con un token de lectura y escritura también guardarlos o eliminarlos, a través del relay. Exportar e importar el historial usan solo el archivo que eliges, y el texto que compartes con QR solo llena «Crear». «Compartir un contacto» lee solo el contacto que eliges, en el teléfono: no se sube, no va al historial ni lo ve la IA.</string>
     <string name="summary_title">Códigos recientes</string>
     <string name="summary_empty">No hay códigos esta semana</string>
     <string name="summary_permission">Resumen para Inicio</string>
@@ -167,11 +167,12 @@
         <item quantity="other">Se eliminaron %1$d códigos</item>
     </plurals>
     <string name="icon_title">Icono de la app</string>
-    <string name="icon_original">Original</string>
-    <string name="icon_light">Claro</string>
-    <string name="icon_gold">Dorado</string>
-    <string name="icon_blue">Azul</string>
-    <string name="icon_green">Verde</string>
+    <string name="icon_moon">Luna</string>
+    <string name="icon_pine">Pino</string>
+    <string name="icon_lilac">Lila</string>
+    <string name="icon_willow">Sauce</string>
+    <string name="icon_autumn">Otoño</string>
+    <string name="icon_cherry">Cerezo</string>
     <string name="icon_hint">Cambia el icono de la pantalla de inicio. Algunos lanzadores tardan unos segundos en mostrarlo.</string>
     <string name="type_event">Evento</string>
     <string name="f_title">Título</string>
@@ -227,4 +228,37 @@
         <item quantity="many">Se importaron %1$d códigos</item>
         <item quantity="other">Se importaron %1$d códigos</item>
     </plurals>
+    <!-- «Compartir un contacto» (vCard, classic or «Arbolito»). -->
+    <string name="share_contact">Compartir un contacto</string>
+    <string name="share_contact_hint">Un QR con sus datos para guardarlo en otro teléfono, clásico o con un arbolito</string>
+    <string name="share_contact_intro">Elige un contacto de tu agenda y marca qué datos quieres compartir. El código se crea en este teléfono.</string>
+    <string name="pick_contact">Elegir contacto</string>
+    <string name="other_contact">Otro contacto</string>
+    <string name="choose_details">Datos que van en el código</string>
+    <string name="preview_title">Vista previa: esto verá quien lo escanee</string>
+    <string name="nothing_chosen">Nada marcado todavía</string>
+    <string name="preview_size">%1$d bytes</string>
+    <string name="vcard_needs_name">Marca al menos el nombre o un teléfono.</string>
+    <string name="vcard_too_long">Son demasiados datos para un solo código. Quita la nota, la dirección o algún correo.</string>
+    <string name="vcard_dense">Con tantos datos el código es denso y cuesta más leerlo desde lejos. Si puedes, quita algo.</string>
+    <string name="make_code">Crear código</string>
+    <string name="style_tree">Arbolito</string>
+    <string name="style_classic">Clásico</string>
+    <string name="code_for">Código QR del contacto %1$s</string>
+    <string name="tree_hint">Escanéame para guardar el contacto</string>
+    <string name="tree_fallback">El diseño con arbolito no se leyó bien en la comprobación, así que se muestra el QR clásico.</string>
+    <string name="code_unreadable">Este código no se pudo comprobar. Prueba con menos datos.</string>
+    <string name="share_confirm_title">¿Compartir este contacto?</string>
+    <string name="share_confirm_text">Se compartirá la imagen con estos datos:\n%1$s\n\nDespués eliges la app.</string>
+    <string name="share_contact_text">Contacto de %1$s: escanea el código para guardarlo.</string>
+    <string name="share_confirm_note">Nada sale del teléfono hasta que tocas «Compartir» y eliges una app.</string>
+    <string name="share_privacy">Los datos solo se leen en este teléfono: no se suben a ningún servidor ni se guardan en el historial.</string>
+    <string name="contact_no_permission">Sin permiso para leer los datos de ese contacto.</string>
+    <string name="contact_unreadable">No se pudieron leer los datos de ese contacto.</string>
+    <string name="f_job">Cargo</string>
+    <string name="f_postal">Dirección postal</string>
+    <string name="f_web">Web</string>
+    <string name="save_contact_title">¿Guardar este contacto?</string>
+    <string name="save_contact_text">Se abrirá el formulario de contacto nuevo con:\n%1$s\n\nAllí decides si lo guardas.</string>
+    <string name="save_contact_yes">Continuar</string>
 </resources>

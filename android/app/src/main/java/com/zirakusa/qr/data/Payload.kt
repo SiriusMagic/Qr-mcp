@@ -16,7 +16,10 @@ sealed class Content {
     data class Wifi(val ssid: String, val password: String, val security: Security, val hidden: Boolean = false) : Content() {
         override val kind get() = Type.WIFI
     }
-    data class Contact(val name: String, val phone: String = "", val email: String = "", val org: String = "", val note: String = "") : Content() {
+    data class Contact(val name: String, val phone: String = "", val email: String = "", val org: String = "", val note: String = "",
+        /** From a vCard: the other phones and emails, the address, the web page and the job title. */
+        val morePhones: List<String> = emptyList(), val moreEmails: List<String> = emptyList(), val address: String = "",
+        val url: String = "", val title: String = "") : Content() {
         override val kind get() = Type.CONTACT
     }
     data class Phone(val number: String) : Content() { override val kind get() = Type.PHONE }
@@ -179,11 +182,37 @@ object Payload {
         return Content.Contact(name, f["TEL"].orEmpty(), f["EMAIL"].orEmpty(), f["ORG"].orEmpty(), f["NOTE"].orEmpty())
     }
 
+    /**
+     * vCard 2.1–4.0: folded lines joined, `\,` `\;` `\n` undone, every TEL and EMAIL kept (the first ones as the main
+     * ones), the address, web page and job title. What is not understood is left out, never guessed.
+     */
     private fun vcard(text: String): Content {
-        val lines = text.lines().map { it.trim() }
-        fun value(key: String) = lines.firstOrNull { it.substringBefore(':').substringBefore(';').equals(key, true) }?.substringAfter(':')?.trim().orEmpty()
-        val name = value("FN").ifBlank { value("N").split(';').filter { it.isNotBlank() }.reversed().joinToString(" ") }
-        return Content.Contact(name, value("TEL"), value("EMAIL"), value("ORG"), value("NOTE"))
+        val lines = text.replace("\r\n", "\n").replace("\n ", "").replace("\n\t", "").lines().map { it.trim() }.filter { it.contains(':') }
+        fun key(line: String) = line.substringBefore(':').substringBefore(';').substringAfterLast('.')
+        fun values(k: String) = lines.filter { key(it).equals(k, true) }.map { it.substringAfter(':').trim() }.filter { it.isNotEmpty() }
+        fun value(k: String) = values(k).firstOrNull().orEmpty()
+        val n = splitEscaped(value("N"), ';').map(VCard::unesc).filter { it.isNotBlank() }
+        val name = VCard.unesc(value("FN")).ifBlank { (n.drop(1).take(1) + n.take(1)).joinToString(" ") }
+        val phones = values("TEL").map { VCard.unesc(it).removePrefix("tel:") }
+        val emails = values("EMAIL").map(VCard::unesc)
+        val address = splitEscaped(value("ADR"), ';').map(VCard::unesc).filter { it.isNotBlank() }.joinToString(", ")
+        return Content.Contact(name, phones.firstOrNull().orEmpty(), emails.firstOrNull().orEmpty(), VCard.unesc(splitEscaped(value("ORG"), ';').firstOrNull().orEmpty()),
+            VCard.unesc(value("NOTE")), phones.drop(1), emails.drop(1), address, VCard.unesc(value("URL")), VCard.unesc(value("TITLE")))
+    }
+
+    /** Splits [s] on [sep] except where it is escaped with a backslash (the escapes stay for [VCard.unesc]). */
+    private fun splitEscaped(s: String, sep: Char): List<String> {
+        val out = mutableListOf<String>(); val cur = StringBuilder(); var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            when {
+                c == '\\' && i + 1 < s.length -> { cur.append(c).append(s[i + 1]); i += 2; continue }
+                c == sep -> { out += cur.toString(); cur.clear() }
+                else -> cur.append(c)
+            }
+            i++
+        }
+        return out + cur.toString()
     }
 
     private fun mailto(text: String): Content {

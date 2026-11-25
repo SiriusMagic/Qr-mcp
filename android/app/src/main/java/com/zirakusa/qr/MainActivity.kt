@@ -1,5 +1,6 @@
 package com.zirakusa.qr
 
+import androidx.compose.ui.graphics.asImageBitmap
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -48,6 +49,14 @@ class MainActivity : ComponentActivity() {
     private val picture = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(::readPicture) }
     private val exportFile = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri -> uri?.let(::writeCsv) }
     private val importFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(::readCsv) }
+    /** «Compartir un contacto»: Android's picker; only the contact the person taps is read ([readContact]). */
+    private val contactPicker = registerForActivityResult(ActivityResultContracts.PickContact()) { uri -> uri?.let(::readContact) }
+    private var waiting: Uri? = null
+    /** Some phones only let an app read the picked contact's details with the contacts permission: asked then, once. */
+    private val contactsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        val uri = waiting; waiting = null
+        if (ok && uri != null) readContact(uri) else if (uri != null) Toast.makeText(this, R.string.contact_no_permission, Toast.LENGTH_LONG).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,6 +76,10 @@ class MainActivity : ComponentActivity() {
             handled = ::handled, paste = openers::paste,
             exportHistory = { exportFile.launch("QR-${getString(R.string.tab_history).lowercase()}-${java.time.LocalDate.now()}.csv") },
             importHistory = { importFile.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) },
+            pickContact = { try { contactPicker.launch(null) } catch (_: android.content.ActivityNotFoundException) { Toast.makeText(this, R.string.no_app, Toast.LENGTH_SHORT).show() } },
+            drawContact = ::drawContact,
+            sharePng = { png, title -> openers.sharePng(png, getString(R.string.share_contact_text, title)) },
+            savePng = { png, title -> openers.savePng(png, title, null) },
         )
         if (savedInstanceState == null) shared(intent)
         setContent {
@@ -101,7 +114,34 @@ class MainActivity : ComponentActivity() {
         state.reload()
     }
 
+    /**
+     * Reads the picked contact on a background thread. If Android wants the contacts permission for it, asks once and
+     * tries again; the agenda itself is never listed or changed.
+     */
+    private fun readContact(uri: Uri) {
+        lifecycleScope.launch {
+            val read = withContext(Dispatchers.IO) { runCatching { ContactReader.read(this@MainActivity, uri) } }
+            val error = read.exceptionOrNull()
+            when {
+                error is SecurityException && ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ->
+                    { waiting = uri; contactsPermission.launch(Manifest.permission.READ_CONTACTS) }
+                read.getOrNull() == null -> Toast.makeText(this@MainActivity, R.string.contact_unreadable, Toast.LENGTH_LONG).show()
+                else -> { state.share.load(read.getOrThrow()!!); state.page = Page.SHARE_CONTACT }
+            }
+        }
+    }
+
+    /** The classic code and, when asked, the «Arbolito» card, drawn and read back off the main thread. */
+    private suspend fun drawContact(text: String, title: String, artistic: Boolean): Pair<com.zirakusa.qr.ui.Picture?, com.zirakusa.qr.ui.Picture?> =
+        withContext(Dispatchers.Default) {
+            fun CardPicture.ui() = com.zirakusa.qr.ui.Picture(bitmap.asImageBitmap(), png, readable)
+            val art = if (artistic) runCatching { ArtCard.tree(text, title, getString(R.string.tree_hint)) }.getOrNull() else null
+            val classic = runCatching { ArtCard.classic(text) }.getOrNull()
+            art?.ui() to classic?.ui()
+        }
+
     private fun back() = when (state.page) {
+        Page.SHARE_CONTACT -> if (state.share.step == com.zirakusa.qr.ui.ContactShare.Step.CODE) state.share.back() else { state.share.clear(); state.page = Page.MAIN }
         Page.MCP -> state.page = Page.SETTINGS
         Page.RESULT -> state.closeResult()
         Page.SETTINGS -> state.page = Page.MAIN

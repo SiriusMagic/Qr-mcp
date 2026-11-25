@@ -77,7 +77,7 @@ import com.zirakusa.qr.ui.theme.QrColors
             }
             Item(stringResource(R.string.mcp_title), "$status · ${stringResource(R.string.mcp_settings_hint)}") { state.page = Page.MCP }
         }
-        IconCard(QrColors.Card, QrColors.Text, QrColors.Muted, QrColors.Accent, androidx.compose.ui.graphics.Color(0xFF0A1420))
+        IconCard(QrColors.Card, QrColors.Text, QrColors.Muted, QrColors.Accent)
         ThemeCard(state.themeMode, state.accent, state::changeTheme, state::changeAccent)
         Caption(stringResource(R.string.about))
         Group {

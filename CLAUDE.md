@@ -10,6 +10,9 @@
 - Leer códigos es en el teléfono (ZXing): sin internet ni servicios de Google. Los fotogramas de la cámara no se guardan.
 - Seguridad: solo `http(s)` es enlace. Nada se abre solo ni por MCP: el usuario toca, y un enlace con avisos pide
   confirmar. Las contraseñas de Wi‑Fi no salen por MCP ni en el resumen de Inicio.
+- Contactos: solo se lee el que la persona elige en el selector de Android, solo para «Compartir un contacto»; nunca va
+  al historial, a internet ni por MCP. Compartir pregunta antes; guardar uno escaneado pide confirmar y abre el formulario
+  de Android. La tarjeta «Arbolito» nunca tapa el QR y se comprueba leyéndola (`ArtCard.verify`); si falla, QR clásico.
 - Privacidad: historial y ajustes viven solo en el teléfono (fuera de copias). Nada sale salvo por el Modo MCP que el
   usuario active; internet es solo para eso.
 - Cada herramienta MCP nueva lleva su prueba en `McpTest`: lista de herramientas, llamada correcta, argumentos malos y

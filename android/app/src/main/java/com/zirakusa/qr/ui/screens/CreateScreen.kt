@@ -1,5 +1,8 @@
 package com.zirakusa.qr.ui.screens
 
+import com.zirakusa.qr.ui.Page
+import androidx.compose.material.icons.outlined.ContactPage
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +50,16 @@ import com.zirakusa.qr.ui.theme.QrColors
             Text(stringResource(R.string.create_title), Modifier.weight(1f).padding(start = 4.dp), fontSize = 26.sp)
             RoundButton(Icons.Outlined.ContentPaste, stringResource(R.string.from_clipboard)) {
                 actions.paste()?.let(state::prefill) ?: actions.toast(emptyClipboard)
+            }
+        }
+        // «Compartir un contacto»: a contact from the agenda as a vCard QR, classic or «Arbolito».
+        Group(Modifier.clickable(onClickLabel = stringResource(R.string.share_contact)) { state.share.clear(); state.page = Page.SHARE_CONTACT }) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Badge(Icons.Outlined.ContactPage, 44.dp)
+                Column(Modifier.padding(start = 14.dp).weight(1f)) {
+                    Text(stringResource(R.string.share_contact), fontSize = 17.sp)
+                    Text(stringResource(R.string.share_contact_hint), color = QrColors.Muted, fontSize = 14.sp)
+                }
             }
         }
         val bar = state.barFormat

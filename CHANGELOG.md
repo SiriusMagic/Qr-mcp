@@ -1,3 +1,22 @@
+# QR 0.3.0: compartir contactos con un arbolito
+
+- **Compartir un contacto** (Crear › «Compartir un contacto»): eliges un contacto con el selector de Android, marcas qué
+  datos van (nombre, teléfonos, correos, empresa, cargo, dirección, web, nota) y ves una **vista previa** de exactamente lo
+  que verá quien lo escanee. El código es una **vCard estándar**: cualquier cámara de teléfono la lee y ofrece guardarla
+  en la agenda.
+- **Diseño «Arbolito»**: un arbolito en 3D dibujado en el teléfono (diseño propio) acompaña al QR, que queda cuadrado,
+  negro sobre blanco, con su margen y sin nada encima. Con «Clásico» vuelves al QR de siempre. **Guardar imagen** y
+  **Compartir** (que pregunta antes y dice qué datos van).
+- **Comprobado antes de mostrarlo**: cada imagen se vuelve a leer en el teléfono (entera y a la mitad de tamaño) y debe dar
+  exactamente la vCard. Si el arbolito no se lee bien, se muestra el QR clásico y te lo dice.
+- **Al escanear un contacto** se ven todos sus datos (también los teléfonos y correos extra, dirección, web y cargo) y
+  «Añadir contacto» **pide confirmar** antes de abrir el formulario de contacto nuevo, donde tú decides si lo guardas.
+- **Privacidad**: el contacto se lee solo en el teléfono, solo el que eliges; no se sube a ningún servidor, no va al
+  historial y la IA (Modo MCP) no lo ve. El permiso de contactos solo se pide si Android lo exige para leer el elegido.
+- **Iconos nuevos**: Luna (el de fábrica), Pino, Lila, Sauce, Otoño y **Cerezo** (seis). Se quitan los anteriores; si
+  tenías uno elegido, pasa solo al nuevo que ocupa su lugar.
+- 29 pruebas.
+
 # QR 0.2.0
 
 - **Ajustes de lectura nuevos**: «Reproducir sonido» (pitido), «Copiar al portapapeles» al leer, «Escaneo continuo» (sigue

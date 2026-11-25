@@ -121,7 +121,7 @@
     <string name="clear_history">Clear history</string>
     <string name="clear_history_hint">Favourites stay</string>
     <string name="clear_history_text">Codes that aren\'t favourites are deleted. This can\'t be undone.</string>
-    <string name="privacy_text">QR has no ads or analytics. The camera reads codes on the phone, without internet, and keeps no pictures. The history lives only on this phone, out of cloud backups. Links never open by themselves: you check them and open them with a tap. Only if you turn on MCP mode, the AI you connect with a token can read your history (without Wi‑Fi passwords) and make codes; with a read-and-write token also keep or delete them, through the relay. Exporting and importing the history use only the file you pick, and text you share with QR only fills in «Create».</string>
+    <string name="privacy_text">QR has no ads or analytics. The camera reads codes on the phone, without internet, and keeps no pictures. The history lives only on this phone, out of cloud backups. Links never open by themselves: you check them and open them with a tap. Only if you turn on MCP mode, the AI you connect with a token can read your history (without Wi‑Fi passwords) and make codes; with a read-and-write token also keep or delete them, through the relay. Exporting and importing the history use only the file you pick, and text you share with QR only fills in «Create». «Share a contact» reads only the contact you pick, on the phone: it is not uploaded, not kept in the history and the AI never sees it.</string>
     <string name="summary_title">Recent codes</string>
     <string name="summary_empty">No codes this week</string>
     <string name="summary_permission">Summary for Inicio</string>
@@ -165,11 +165,12 @@
         <item quantity="other">%1$d codes deleted</item>
     </plurals>
     <string name="icon_title">App icon</string>
-    <string name="icon_original">Original</string>
-    <string name="icon_light">Light</string>
-    <string name="icon_gold">Gold</string>
-    <string name="icon_blue">Blue</string>
-    <string name="icon_green">Green</string>
+    <string name="icon_moon">Moon</string>
+    <string name="icon_pine">Pine</string>
+    <string name="icon_lilac">Lilac</string>
+    <string name="icon_willow">Willow</string>
+    <string name="icon_autumn">Autumn</string>
+    <string name="icon_cherry">Cherry</string>
     <string name="icon_hint">Changes the home-screen icon. Some launchers take a few seconds to show it.</string>
     <string name="type_event">Event</string>
     <string name="f_title">Title</string>
@@ -224,4 +225,36 @@
         <item quantity="one">%1$d code imported</item>
         <item quantity="other">%1$d codes imported</item>
     </plurals>
+    <string name="share_contact">Share a contact</string>
+    <string name="share_contact_hint">A QR with their details to save on another phone, classic or with a little tree</string>
+    <string name="share_contact_intro">Pick a contact from your agenda and tick which details to share. The code is made on this phone.</string>
+    <string name="pick_contact">Pick contact</string>
+    <string name="other_contact">Another contact</string>
+    <string name="choose_details">Details in the code</string>
+    <string name="preview_title">Preview: what whoever scans it will see</string>
+    <string name="nothing_chosen">Nothing ticked yet</string>
+    <string name="preview_size">%1$d bytes</string>
+    <string name="vcard_needs_name">Tick at least the name or a phone.</string>
+    <string name="vcard_too_long">Too many details for one code. Leave out the note, the address or an email.</string>
+    <string name="vcard_dense">With so many details the code is dense and harder to read from afar. Leave something out if you can.</string>
+    <string name="make_code">Make code</string>
+    <string name="style_tree">Little tree</string>
+    <string name="style_classic">Classic</string>
+    <string name="code_for">QR code of contact %1$s</string>
+    <string name="tree_hint">Scan me to save the contact</string>
+    <string name="tree_fallback">The little‑tree design didn\'t read back well, so the classic QR is shown.</string>
+    <string name="code_unreadable">This code couldn\'t be checked. Try with fewer details.</string>
+    <string name="share_confirm_title">Share this contact?</string>
+    <string name="share_confirm_text">The picture will be shared with these details:\n%1$s\n\nYou pick the app next.</string>
+    <string name="share_contact_text">Contact of %1$s: scan the code to save it.</string>
+    <string name="share_confirm_note">Nothing leaves the phone until you tap «Share» and pick an app.</string>
+    <string name="share_privacy">The details are read only on this phone: never uploaded to any server nor kept in the history.</string>
+    <string name="contact_no_permission">No permission to read that contact\'s details.</string>
+    <string name="contact_unreadable">That contact\'s details couldn\'t be read.</string>
+    <string name="f_job">Job title</string>
+    <string name="f_postal">Postal address</string>
+    <string name="f_web">Website</string>
+    <string name="save_contact_title">Save this contact?</string>
+    <string name="save_contact_text">The new‑contact form will open with:\n%1$s\n\nYou decide there whether to save it.</string>
+    <string name="save_contact_yes">Continue</string>
 </resources>

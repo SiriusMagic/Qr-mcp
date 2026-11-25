@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Reading codes with the camera, only after the user allows it. Frames are read on the phone and never kept. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- «Compartir un contacto»: only if Android asks for it to read the one contact the person picked. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <!-- Modo MCP through the relay, only when the user turns it on (off by default). -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -53,28 +55,35 @@
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".HomeClaro" android:targetActivity=".MainActivity" android:exported="true"
-            android:enabled="false" android:icon="@mipmap/ic_launcher_light">
+            android:enabled="false" android:icon="@mipmap/ic_launcher_pine">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".HomeDorado" android:targetActivity=".MainActivity" android:exported="true"
-            android:enabled="false" android:icon="@mipmap/ic_launcher_gold">
+            android:enabled="false" android:icon="@mipmap/ic_launcher_lilac">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".HomeAzul" android:targetActivity=".MainActivity" android:exported="true"
-            android:enabled="false" android:icon="@mipmap/ic_launcher_blue">
+            android:enabled="false" android:icon="@mipmap/ic_launcher_willow">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".HomeVerde" android:targetActivity=".MainActivity" android:exported="true"
-            android:enabled="false" android:icon="@mipmap/ic_launcher_green">
+            android:enabled="false" android:icon="@mipmap/ic_launcher_autumn">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".HomeCerezo" android:targetActivity=".MainActivity" android:exported="true"
+            android:enabled="false" android:icon="@mipmap/ic_launcher_cherry">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

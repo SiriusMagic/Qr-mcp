@@ -34,10 +34,7 @@ class Openers(private val context: Context) {
                 .putExtra(Intent.EXTRA_SUBJECT, c.subject).putExtra(Intent.EXTRA_TEXT, c.body)
             is Content.Sms -> Intent(Intent.ACTION_SENDTO, "smsto:${Uri.encode(c.number)}".toUri()).putExtra("sms_body", c.body)
             is Content.Place -> "geo:${c.lat},${c.lng}?q=${c.lat},${c.lng}".toUri().let { Intent(Intent.ACTION_VIEW, it) }
-            is Content.Contact -> Intent(ContactsContract.Intents.Insert.ACTION).setType(ContactsContract.RawContacts.CONTENT_TYPE)
-                .putExtra(ContactsContract.Intents.Insert.NAME, c.name).putExtra(ContactsContract.Intents.Insert.PHONE, c.phone)
-                .putExtra(ContactsContract.Intents.Insert.EMAIL, c.email).putExtra(ContactsContract.Intents.Insert.COMPANY, c.org)
-                .putExtra(ContactsContract.Intents.Insert.NOTES, c.note)
+            is Content.Contact -> contact(c)
             is Content.Wifi -> wifi(c)
             is Content.Event -> event(c) ?: return
             is Content.Text -> return
@@ -72,10 +69,37 @@ class Openers(private val context: Context) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * «Añadir contacto» (after the person confirmed it in the app): Android's own «new contact» form, filled, where they
+     * still choose to save. Nothing is written to the agenda by this app.
+     */
+    private fun contact(c: Content.Contact): Intent {
+        val i = Intent(ContactsContract.Intents.Insert.ACTION).setType(ContactsContract.RawContacts.CONTENT_TYPE)
+            .putExtra(ContactsContract.Intents.Insert.NAME, c.name).putExtra(ContactsContract.Intents.Insert.PHONE, c.phone)
+            .putExtra(ContactsContract.Intents.Insert.EMAIL, c.email).putExtra(ContactsContract.Intents.Insert.COMPANY, c.org)
+            .putExtra(ContactsContract.Intents.Insert.NOTES, c.note).putExtra(ContactsContract.Intents.Insert.JOB_TITLE, c.title)
+            .putExtra(ContactsContract.Intents.Insert.POSTAL, c.address)
+        c.morePhones.getOrNull(0)?.let { i.putExtra(ContactsContract.Intents.Insert.SECONDARY_PHONE, it) }
+        c.morePhones.getOrNull(1)?.let { i.putExtra(ContactsContract.Intents.Insert.TERTIARY_PHONE, it) }
+        c.moreEmails.getOrNull(0)?.let { i.putExtra(ContactsContract.Intents.Insert.SECONDARY_EMAIL, it) }
+        c.moreEmails.getOrNull(1)?.let { i.putExtra(ContactsContract.Intents.Insert.TERTIARY_EMAIL, it) }
+        if (c.url.isNotBlank()) i.putParcelableArrayListExtra(ContactsContract.Intents.Insert.DATA, arrayListOf(ContentValues().apply {
+            put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE)
+            put(ContactsContract.CommonDataKinds.Website.URL, c.url)
+        }))
+        return i
+    }
+
     /** QR codes and the bar codes «Crear» makes go as a picture (and their text); other bar codes as text. */
-    fun share(e: Entry) {
-        val send = Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_TEXT, e.text)
-        val png = Codes.picture(e.text, e.format)
+    fun share(e: Entry) = sharePng(Codes.picture(e.text, e.format), e.text)
+
+    /**
+     * Android's «Compartir» sheet with [png] (from the app's cache, read only by the app the person picks) and [text].
+     * Nothing leaves until they choose an app there.
+     */
+    fun sharePng(png: ByteArray?, text: String?) {
+        val send = Intent(Intent.ACTION_SEND)
+        text?.let { send.putExtra(Intent.EXTRA_TEXT, it) }
         if (png != null) {
             val dir = File(context.cacheDir, "share").apply { mkdirs() }
             val file = File(dir, "qr.png").apply { writeBytes(png) }
@@ -87,18 +111,21 @@ class Openers(private val context: Context) {
     }
 
     /** «Guardar imagen»: into Pictures/QR (Android 10+; before, it is shared instead). */
-    fun saveImage(e: Entry) {
-        if (Build.VERSION.SDK_INT < 29) return share(e)
+    fun saveImage(e: Entry) = savePng(Codes.picture(e.text, e.format), e.title, e.text)
+
+    /** [png] into Pictures/QR named after [title] (Android 10+; before, it is shared instead). */
+    fun savePng(png: ByteArray?, title: String, text: String?) {
+        if (Build.VERSION.SDK_INT < 29) return sharePng(png, text)
         val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "QR-${e.title.filter { it.isLetterOrDigit() }.take(30).ifEmpty { "codigo" }}-${System.currentTimeMillis() / 1000}.png")
+            put(MediaStore.Images.Media.DISPLAY_NAME, "QR-${title.filter { it.isLetterOrDigit() }.take(30).ifEmpty { "codigo" }}-${System.currentTimeMillis() / 1000}.png")
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
             put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/QR")
         }
         val resolver = context.contentResolver
         val ok = runCatching {
+            val bytes = png ?: error("no picture")
             val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: error("no uri")
-            val png = Codes.picture(e.text, e.format) ?: error("no picture")
-            resolver.openOutputStream(uri)?.use { it.write(png) } ?: error("no stream")
+            resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: error("no stream")
         }.isSuccess
         Toast.makeText(context, if (ok) R.string.saved_image else R.string.not_saved, Toast.LENGTH_SHORT).show()
     }

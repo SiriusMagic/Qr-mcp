@@ -32,6 +32,7 @@ import com.zirakusa.qr.data.Entry
 import com.zirakusa.qr.ui.screens.CreateScreen
 import com.zirakusa.qr.ui.screens.HistoryScreen
 import com.zirakusa.qr.ui.screens.McpScreen
+import com.zirakusa.qr.ui.screens.ShareContactScreen
 import com.zirakusa.qr.ui.screens.ResultScreen
 import com.zirakusa.qr.ui.screens.ScanScreen
 import com.zirakusa.qr.ui.screens.SettingsScreen
@@ -61,6 +62,13 @@ class AppActions(
     /** «Exportar» and «Importar» of «Historial», through Android's file picker. */
     val exportHistory: () -> Unit = {},
     val importHistory: () -> Unit = {},
+    /** «Compartir un contacto»: Android's contact picker (the person picks one; only that one is read). */
+    val pickContact: () -> Unit = {},
+    /** Draws the «Arbolito» card (when asked) and the classic code for [ContactShare.vcard], each read back to check it. */
+    val drawContact: suspend (text: String, title: String, artistic: Boolean) -> Pair<Picture?, Picture?> = { _, _, _ -> null to null },
+    /** Android's «Compartir» sheet / Pictures › QR with a finished picture. */
+    val sharePng: (ByteArray, String) -> Unit = { _, _ -> },
+    val savePng: (ByteArray, String) -> Unit = { _, _ -> },
 )
 
 /** The whole app: the chosen tab with the bar at the bottom (Escanear · Crear · Historial · Ajustes), or a page over it. */
@@ -69,6 +77,7 @@ class AppActions(
         Page.RESULT -> state.shown?.let { return ResultScreen(state, it, actions) }
         Page.SETTINGS -> return SettingsScreen(state, actions.toast)
         Page.MCP -> return McpScreen(actions.copyLink, actions.goToHub) { state.page = Page.SETTINGS }
+        Page.SHARE_CONTACT -> return ShareContactScreen(state, actions)
         Page.MAIN -> Unit
     }
     Box(Modifier.fillMaxSize().background(QrColors.Background)) {

@@ -106,8 +106,10 @@ import java.time.format.FormatStyle
         is Content.Wifi -> listOfNotNull(R.string.f_ssid to c.ssid, R.string.f_security to when (c.security) {
             Security.WPA -> "WPA/WPA2"; Security.WEP -> "WEP"; Security.OPEN -> "—" },
             if (c.password.isNotEmpty()) R.string.f_password to (if (reveal) c.password else "••••••••") else null)
-        is Content.Contact -> listOf(R.string.f_name to c.name, R.string.f_phone to c.phone, R.string.f_email to c.email, R.string.f_org to c.org,
-            R.string.f_note to c.note).filter { it.second.isNotBlank() }
+        is Content.Contact -> (listOf(R.string.f_name to c.name, R.string.f_phone to c.phone) + c.morePhones.map { R.string.f_phone to it } +
+            listOf(R.string.f_email to c.email) + c.moreEmails.map { R.string.f_email to it } +
+            listOf(R.string.f_org to c.org, R.string.f_job to c.title, R.string.f_postal to c.address, R.string.f_web to c.url, R.string.f_note to c.note))
+            .filter { it.second.isNotBlank() }
         is Content.Phone -> listOf(R.string.f_phone to c.number)
         is Content.Email -> listOf(R.string.f_email to c.to, R.string.f_subject to c.subject, R.string.f_body to c.body).filter { it.second.isNotBlank() }
         is Content.Sms -> listOf(R.string.f_phone to c.number, R.string.f_body to c.body).filter { it.second.isNotBlank() }
@@ -141,8 +143,18 @@ import java.time.format.FormatStyle
         is Content.Place -> R.string.a_map; is Content.Event -> R.string.a_calendar; is Content.Text -> return
     }
     var risky by remember { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
     val warned = c is Content.Link && LinkCheck.check(c.url)?.warnings.orEmpty().isNotEmpty()
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { MainButton(stringResource(label)) { if (warned) risky = true else actions.open(e) } }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        MainButton(stringResource(label)) { if (warned) risky = true else if (c is Content.Contact) saving = true else actions.open(e) }
+    }
+    // A contact is never saved by itself: the person sees what will go to the agenda and confirms (then Android's own
+    // «new contact» form opens, filled, where they save it).
+    if (saving && c is Content.Contact) AlertDialog({ saving = false }, title = { Text(stringResource(R.string.save_contact_title)) },
+        text = { Text(stringResource(R.string.save_contact_text, (listOf(c.name, c.phone) + c.morePhones + listOf(c.email) + c.moreEmails +
+            listOf(c.org, c.title, c.address, c.url, c.note)).filter { it.isNotBlank() }.joinToString("\n") { "• $it" })) },
+        confirmButton = { TextButton({ saving = false; actions.open(e) }) { Text(stringResource(R.string.save_contact_yes), color = QrColors.AccentText) } },
+        dismissButton = { TextButton({ saving = false }) { Text(stringResource(R.string.cancel), color = QrColors.Text) } })
     // A link with warnings asks once more; the safe choice is the highlighted one.
     if (risky) AlertDialog({ risky = false }, title = { Text(stringResource(R.string.risky_title)) }, text = { Text(stringResource(R.string.risky_text)) },
         confirmButton = { TextButton({ risky = false }) { Text(stringResource(R.string.dont_open), color = QrColors.AccentText) } },
