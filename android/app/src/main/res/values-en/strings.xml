@@ -125,7 +125,7 @@
     <string name="summary_title">Recent codes</string>
     <string name="summary_empty">No codes this week</string>
     <string name="summary_permission">Summary for Inicio</string>
-    <string name="mcp_settings_hint">Controlled from Arka: turning it on, allowing it locally and creating tokens.</string>
+    <string name="mcp_settings_hint">Set up local access and redirection to Hub.</string>
     <string name="mcp_title">MCP mode</string>
     <string name="mcp_online">Connected to the internet</string>
     <string name="mcp_connecting">Connecting…</string>
@@ -228,7 +228,7 @@
     <string name="save_contact_title">Save this contact?</string>
     <string name="save_contact_text">The new‑contact form will open with:\n%1$s\n\nYou decide there whether to save it.</string>
     <string name="save_contact_yes">Continue</string>
-    <string name="mcp_no_arka">Install Arka to turn MCP mode on.</string>
+    <string name="mcp_no_arka">Install Arka to manage Hub connections.</string>
     <plurals name="preview_size">
         <item quantity="one">%1$d byte</item>
         <item quantity="other">%1$d bytes</item>

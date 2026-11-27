@@ -28,6 +28,7 @@ import com.zirakusa.qr.data.Read
 import com.zirakusa.qr.data.SharedValues
 import com.zirakusa.qr.data.Source
 import com.zirakusa.qr.mcp.McpMode
+import com.zirakusa.qr.mcp.showMcpOptions
 import com.zirakusa.qr.ui.AppActions
 import com.zirakusa.qr.ui.Page
 import com.zirakusa.qr.ui.QrApp
@@ -194,11 +195,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    /** «Modo MCP» in Ajustes: it is turned on, allowed on the phone and given tokens in Arka, so this opens Arka. */
-    private fun openArka() {
-        val open = packageManager.getLaunchIntentForPackage("com.zirakusa.gatewayhub")
-        if (open != null) startActivity(open) else Toast.makeText(this, R.string.mcp_no_arka, Toast.LENGTH_LONG).show()
-    }
+    private fun openArka() = showMcpOptions(this)
 
     companion object { const val MAX_SIDE = 1600 }
 }

@@ -126,7 +126,7 @@
     <string name="summary_title">Códigos recientes</string>
     <string name="summary_empty">No hay códigos esta semana</string>
     <string name="summary_permission">Resumen para Inicio</string>
-    <string name="mcp_settings_hint">Lo controla Arka: activarlo, permitirlo en local y crear tokens.</string>
+    <string name="mcp_settings_hint">Configura el acceso local y la redirección a Hub.</string>
     <string name="mcp_title">Modo MCP</string>
     <string name="mcp_online">Conectado a internet</string>
     <string name="mcp_connecting">Conectando…</string>
@@ -232,7 +232,7 @@
     <string name="save_contact_title">¿Guardar este contacto?</string>
     <string name="save_contact_text">Se abrirá el formulario de contacto nuevo con:\n%1$s\n\nAllí decides si lo guardas.</string>
     <string name="save_contact_yes">Continuar</string>
-    <string name="mcp_no_arka">Instala Arka para activar el Modo MCP.</string>
+    <string name="mcp_no_arka">Instala Arka para administrar los enlaces del Hub.</string>
     <plurals name="preview_size">
         <item quantity="one">%1$d byte</item>
         <item quantity="many">%1$d bytes</item>
